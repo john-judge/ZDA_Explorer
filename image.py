@@ -4,6 +4,7 @@ get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
 
 from skimage.measure import block_reduce
+import cv2 as cv
 
 
 

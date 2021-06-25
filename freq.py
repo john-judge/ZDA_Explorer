@@ -1,7 +1,6 @@
 import numpy as np
 from scipy.fft import fft, fftfreq, fftshift
 
-get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
 
 class FreqAnalyzer:

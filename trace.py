@@ -51,7 +51,7 @@ class Tracer:
                 for jh in range(meta['raw_height']):
                     self.subtract_noise(raw_data, i, jw, jh, 
                                           meta['interval_between_samples'],
-                                          plot=(i==0 and jw==40 and jh == 40),
+                                          plot=False,
                                           linear=False )
 
     def get_half_width(self, location, trace):
