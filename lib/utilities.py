@@ -25,10 +25,10 @@ from sklearn.cluster import AgglomerativeClustering
 from sklearn.cluster import KMeans
 
 # ZDA Explorer modules
-from trace import Tracer
-from image import MovieMaker, SignalProcessor
-from freq import FreqAnalyzer
-from snr import AnalyzerSNR
+from lib.trace import Tracer
+from lib.image import MovieMaker, SignalProcessor
+from lib.freq import FreqAnalyzer
+from lib.snr import AnalyzerSNR
 
 
 ############################# Data load functions ##########################
@@ -125,6 +125,10 @@ class Dataset:
     def get_rli(self):
         """ Returns RLI data """
         return self.rli
+    
+    def get_trial_data(self, trial_no):
+        """ Returns array slice for trial number """
+        return 
     
 
     def read_zda_to_df(self, zda_file):
@@ -233,4 +237,4 @@ class DataLoader:
     
     def get_dataset(self, filename):
         return self.all_data[filename]
-
+    
