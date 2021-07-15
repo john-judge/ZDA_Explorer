@@ -31,23 +31,26 @@ class AnalyzerSNR:
         whose snr is below snr_cutoff (a percentile in range [0,1]) """
         
         self.k_clusters = k_clusters
-        self.snr_cutoff = snr_cutoff
+        self.snr_cutoff = np.percentile(self.snr, snr_cutoff * 100)
         
         if self.snr is None:
             raise ValueError("No SNR data found.")
             
-        snr_cutoff = np.percentile(self.snr, snr_cutoff * 100)
-        mask = (self.snr >= snr_cutoff).astype(np.float)
+        mask = (self.snr >= self.snr_cutoff).astype(np.float)
         if plot:
             # masked image: reasonability check
             plt.imshow(self.snr * mask, cmap='jet', interpolation='nearest')
             plt.show()
             
         # +1 for the masked 0's
+        snr_copy = self.snr
+        snr_orig_shape = self.snr.shape
         km = KMeans(n_clusters=k_clusters+1).fit(self.snr.reshape(-1,1)) 
         
         self.clustered = np.array(km.labels_).reshape(self.snr.shape) + 1
         self.clustered = self.clustered.astype(np.int)
+        
+        self.snr.reshape(snr_orig_shape)
         
         if plot:
             plt.imshow(self.clustered * mask, cmap='viridis', interpolation='nearest')
@@ -78,11 +81,12 @@ class AnalyzerSNR:
             # SNR by cluster
             avg_snr_by_cluster = self.get_average_snr_by_cluster()
             self.cluster_indices_by_snr = np.argsort(np.array(avg_snr_by_cluster)) + 1
-        
+
         k_selection = self.cluster_indices_by_snr[-1-k]
         
         mask = (self.snr >= self.snr_cutoff).astype(np.float)
         # Select the pixels in this SNR cluster, above SNR cutoff
+        
         arg_selection = np.stack(np.where(self.clustered * mask == k_selection))
         
         if plot:

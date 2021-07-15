@@ -1,5 +1,6 @@
 # ZDA data files
 **/*.zda
+zda_targets
 
 # Media files
 **/*.jpg

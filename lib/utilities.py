@@ -8,7 +8,6 @@ import numpy as np
 from collections import defaultdict
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
-from sklearn.linear_model import LinearRegression
 
 from scipy.ndimage import gaussian_filter
 
@@ -97,10 +96,12 @@ class Dataset:
     def get_data(self, trial=None):
         """ Returns clipped data """
         
-        # Set to clipped values
-        self.meta['points_per_trace'] = self.t_range[1] - self.t_range[0]
-        self.meta['raw_width'] = self.x_range[1] - self.x_range[0]
-        self.meta['raw_height'] = self.y_range[1] - self.y_range[0]
+        n = self.original['points_per_trace']
+        
+        # Set to clipped values. %n to deal with negative range values
+        self.meta['points_per_trace'] = (self.t_range[1]%n) - (self.t_range[0]%n)
+        self.meta['raw_width'] = (self.x_range[1]%n) - (self.x_range[0]%n)
+        self.meta['raw_height'] = (self.y_range[1]%n) - (self.y_range[0]%n)
         
         self.raw_width = self.meta['raw_width']
         self.raw_height = self.meta['raw_height']
@@ -215,6 +216,7 @@ class DataLoader:
     
     def __init__(self):
         self.all_data = {} # maps file names to Dataset objects
+        self.n_files_loaded = 0
         
     def select_data_by_keyword(self, keyword):
         """ Returns the data for the first file matching the keyword """
@@ -230,11 +232,13 @@ class DataLoader:
                 file = str(dirName + "/" + file)
                 if '.zda' == file[-4:]:
                     self.all_data[file] = Dataset(file)
-                    n_files_loaded += 1
-
-        print('Number of files loaded:', n_files_loaded)
+                    self.n_files_loaded += 1
+                    
         return self.all_data
     
     def get_dataset(self, filename):
         return self.all_data[filename]
+    
+    def get_n_files_loaded(self):
+        return self.n_files_loaded
     

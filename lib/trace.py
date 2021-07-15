@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.linear_model import LinearRegression
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
@@ -27,8 +28,13 @@ class Tracer:
 
     def subtract_noise(self, raw_data, trial, jw, jh, interval, linear=True, plot=False):
         """ subtract background drift off of single trace """
-        X = np.array([interval * i for i in range(raw_data.shape[3]) ]).reshape(-1,1)
-        y = raw_data[trial, jw, jh, :]
+        X = np.array([interval * i for i in range(raw_data.shape[-1]) ])
+        X = X.reshape(-1,1)
+        y = None
+        if trial is None:
+            y = raw_data[jw, jh, :]
+        else:
+            y = raw_data[trial, jw, jh, :]
         if not linear: # then Exponential Regression
             y[y <= 0] = 1
             y = np.log(y)
@@ -40,16 +46,29 @@ class Tracer:
 
         if plot:
             self.plot_trace(raw_data, jw, jh, interval, trial=trial, reg=reg)
-
-        raw_data[trial, jw, jh, :] = (raw_data[trial, jw, jh, :].reshape(-1,1) 
+            
+        if trial is not None:
+            raw_data[trial, jw, jh, :] = (raw_data[trial, jw, jh, :].reshape(-1,1) 
                                       - reg).reshape(-1)
+        else:
+            raw_data[jw, jh, :] = (raw_data[jw, jh, :].reshape(-1,1) 
+                                      - reg).reshape(-1)
+            
 
-    def correct_background(self, meta, raw_data):
+    def correct_background(self, meta, raw_data, trial_dim=True):
         """ subtract background drift off of all traces """
-        for i in range(meta['number_of_trials']):
-            for jw in range(meta['raw_width']):
-                for jh in range(meta['raw_height']):
-                    self.subtract_noise(raw_data, i, jw, jh, 
+        if trial_dim:
+            for i in range(meta['number_of_trials']):
+                for jw in range(meta['raw_width']):
+                    for jh in range(meta['raw_height']):
+                        self.subtract_noise(raw_data, i, jw, jh, 
+                                              meta['interval_between_samples'],
+                                              plot=False,
+                                              linear=False )
+        else:
+            for jw in range(raw_data.shape[0]):
+                for jh in range(raw_data.shape[1]):
+                    self.subtract_noise(raw_data, None, jw, jh, 
                                           meta['interval_between_samples'],
                                           plot=False,
                                           linear=False )
