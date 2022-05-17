@@ -28,6 +28,7 @@ from lib.trace import Tracer
 from lib.image import MovieMaker, SignalProcessor
 from lib.freq import FreqAnalyzer
 from lib.snr import AnalyzerSNR
+from lib.tsm_reader import TSM_Reader
 
 
 ############################# Data load functions ##########################
@@ -131,7 +132,14 @@ class Dataset:
         """ Returns array slice for trial number """
         return 
     
-
+    def read_tsm_to_df(self, tsm_file):
+        tsr = TSM_Reader()
+        tsr.load_tsm(tsm_file)
+        
+        metadata ={}
+        metadata['points_per_trace'], metadata['raw_width'], metadata['raw_height'] = tsr.get_dim()
+        return tsr.get_images(), metadata, 
+        
     def read_zda_to_df(self, zda_file):
         ''' Reads ZDA file to dataframe, and returns
         metadata as a dict. 
@@ -226,14 +234,14 @@ class DataLoader:
 
     def load_all_zda(self, data_dir='.'):
         ''' Loads all ZDA data in data_dir into a dictionary of dataframes and metadata '''
-        n_files_loaded = 0
+        self.n_files_loaded = 0
         for dirName, subdirList, fileList in os.walk(data_dir,topdown=True):
             for file in fileList:
                 file = str(dirName + "/" + file)
                 if '.zda' == file[-4:]:
                     self.all_data[file] = Dataset(file)
                     self.n_files_loaded += 1
-                    
+
         return self.all_data
     
     def get_dataset(self, filename):
