@@ -2,6 +2,10 @@
 **/*.zda
 zda_targets
 
+# TSM data files
+**/*.tsm
+tsm_targets
+
 # Media files
 **/*.jpg
 **/*.mpeg

@@ -40,7 +40,13 @@ class Dataset:
         self.x_range = x_range
         self.y_range = y_range
         self.t_range = t_range
-        self.data, metadata, self.rli = self.read_zda_to_df(filename)
+        self.data, metadata, self.rli = None, None, None
+        if filename[-4:] == '.zda':
+            self.data, metadata, self.rli = self.read_zda_to_df(filename)
+        elif filename[-4] == '.tsm':
+            self.data, metadata, self.rli = self.read_tsm_to_df(filename)
+        else:
+            print(filename, "not known file type")
         self.filename = filename
         self.meta = metadata
         if self.meta is not None:
@@ -234,11 +240,17 @@ class DataLoader:
 
     def load_all_zda(self, data_dir='.'):
         ''' Loads all ZDA data in data_dir into a dictionary of dataframes and metadata '''
+        return self.load_all_files()
+
+    def load_all_tsm(self, data_dir="."):
+        return self.load_all_files(file_type='.tsm')
+    
+    def load_all_files(self, data_dir='.', file_type='.zda'):
         self.n_files_loaded = 0
         for dirName, subdirList, fileList in os.walk(data_dir,topdown=True):
             for file in fileList:
                 file = str(dirName + "/" + file)
-                if '.zda' == file[-4:]:
+                if file_type == file[-4:]:
                     self.all_data[file] = Dataset(file)
                     self.n_files_loaded += 1
 

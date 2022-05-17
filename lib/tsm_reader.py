@@ -2,13 +2,10 @@ import os
 import struct
 import numpy as np
 
-from pyPhoto21.database.file import File
-from pyPhoto21.database.metadata import Metadata
-
 
 # RedshirtImaging website says it works with ImageJ, which supports:
 #   https://imagej.nih.gov/ij/docs/guide/146-7.html#sub:Native-Formats
-class TSM_Reader(File):
+class TSM_Reader():
 
     def __init__(self):
         super().__init__(Metadata())
