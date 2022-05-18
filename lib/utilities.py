@@ -22,6 +22,7 @@ from yellowbrick.cluster import KElbowVisualizer
 from sklearn.metrics import silhouette_samples, silhouette_score
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.cluster import KMeans
+from skimage.measure import block_reduce
 
 # ZDA Explorer modules
 from lib.trace import Tracer
@@ -40,38 +41,41 @@ class Dataset:
         self.x_range = x_range
         self.y_range = y_range
         self.t_range = t_range
+        self.binning = 1
         self.data, metadata, self.rli = None, None, None
         if filename[-4:] == '.zda':
             self.data, metadata, self.rli = self.read_zda_to_df(filename)
-        elif filename[-4] == '.tsm':
+        elif filename[-4:] == '.tsm':
             self.data, metadata, self.rli = self.read_tsm_to_df(filename)
         else:
             print(filename, "not known file type")
         self.filename = filename
         self.meta = metadata
         if self.meta is not None:
-            self.version = metadata['version']
-            self.slice_number = metadata['slice_number']
-            self.location_number = metadata['location_number']
-            self.record_number = metadata['record_number'] 
-            self.camera_program = metadata['camera_program'] 
-            self.number_of_trials = metadata['number_of_trials']
-            self.interval_between_trials = metadata['interval_between_trials']
-            self.acquisition_gain = metadata['acquisition_gain']
-            self.points_per_trace = metadata['points_per_trace']
-            self.time_RecControl = metadata['time_RecControl']
-            self.reset_onset = metadata['reset_onset']
-            self.reset_duration =  metadata['reset_duration']
-            self.shutter_onset = metadata['shutter_onset'] 
-            self.shutter_duration = metadata['shutter_duration']
-            self.stimulation1_onset = metadata['stimulation1_onset']
-            self.stimulation1_duration = metadata['stimulation1_duration']
-            self.stimulation2_onset = metadata['stimulation2_onset'] 
-            self.stimulation2_duration = metadata['stimulation2_duration']
-            self.acquisition_onset = metadata['acquisition_onset'] 
-            self.interval_between_samples = metadata['interval_between_samples']
             self.raw_width = metadata['raw_width']
             self.raw_height = metadata['raw_height']
+            self.points_per_trace = metadata['points_per_trace']
+            self.interval_between_samples = metadata['interval_between_samples']
+            if filename[-4:] == '.zda':
+                self.version = metadata['version']
+                self.slice_number = metadata['slice_number']
+                self.location_number = metadata['location_number']
+                self.record_number = metadata['record_number']
+                self.camera_program = metadata['camera_program']
+                self.number_of_trials = metadata['number_of_trials']
+                self.interval_between_trials = metadata['interval_between_trials']
+                self.acquisition_gain = metadata['acquisition_gain']
+                self.time_RecControl = metadata['time_RecControl']
+                self.reset_onset = metadata['reset_onset']
+                self.reset_duration = metadata['reset_duration']
+                self.shutter_onset = metadata['shutter_onset']
+                self.shutter_duration = metadata['shutter_duration']
+                self.stimulation1_onset = metadata['stimulation1_onset']
+                self.stimulation1_duration = metadata['stimulation1_duration']
+                self.stimulation2_onset = metadata['stimulation2_onset']
+                self.stimulation2_duration = metadata['stimulation2_duration']
+                self.acquisition_onset = metadata['acquisition_onset']
+
             
             # original dimensions
             self.original = {'raw_width': self.raw_width,
@@ -83,6 +87,10 @@ class Dataset:
         self.x_range = x_range
         self.y_range = y_range
         self.t_range = t_range
+
+    def bin_data(self, binning):
+        if binning >= 1 and type(binning) == int:
+            self.binning = binning
         
     def get_unclipped_data(self, trial=None):
         """ Returns unclipped data """
@@ -101,7 +109,7 @@ class Dataset:
         return self.data
     
     def get_data(self, trial=None):
-        """ Returns clipped data """
+        """ Returns clipped and binned data """
         
         n = self.original['points_per_trace']
         
@@ -114,17 +122,24 @@ class Dataset:
         self.raw_height = self.meta['raw_height']
         self.points_per_trace = self.meta['points_per_trace']
         
-        
+        ret_data = None
         if trial is not None:
-            return self.data[trial,
+            ret_data = self.data[trial,
+                    self.t_range[0]:self.t_range[1],
                     self.x_range[0]:self.x_range[1],
-                    self.y_range[0]:self.y_range[1],
-                    self.t_range[0]:self.t_range[1]]
+                    self.y_range[0]:self.y_range[1]]
         else:
-            return self.data[:,
+            ret_data = self.data[:,
+                    self.t_range[0]:self.t_range[1],
                     self.x_range[0]:self.x_range[1],
-                    self.y_range[0]:self.y_range[1],
-                    self.t_range[0]:self.t_range[1]]
+                    self.y_range[0]:self.y_range[1]]
+
+        if self.binning > 1:
+            ret_data = block_reduce(ret_data,
+                            (1, 1, self.binning, self.binning),
+                            np.average)
+
+        return np.copy(ret_data)
         
     def get_meta(self):
         """ Returns metadata dictionary. Mostly for legacy behavior. """
@@ -144,7 +159,11 @@ class Dataset:
         
         metadata ={}
         metadata['points_per_trace'], metadata['raw_width'], metadata['raw_height'] = tsr.get_dim()
-        return tsr.get_images(), metadata, 
+        metadata['interval_between_samples'] = tsr.get_int_pts()
+        for k in tsr.metadata:
+            metadata[k] = tsr.metadata[k]
+        print(metadata)
+        return tsr.get_images(), metadata, tsr.dark_frame
         
     def read_zda_to_df(self, zda_file):
         ''' Reads ZDA file to dataframe, and returns
@@ -220,7 +239,7 @@ class Dataset:
                             print("Ran out of points.",len(raw_data))
                             file.close()
                             return metadata
-                        raw_data[i,jw,jh,k] = int.from_bytes(pt, "little")
+                        raw_data[i,k,jw,jh] = int.from_bytes(pt, "little")
 
         file.close()
         return raw_data, metadata, rli

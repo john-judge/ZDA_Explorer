@@ -6,6 +6,8 @@ zda_targets
 **/*.tsm
 tsm_targets
 
+.idea
+
 # Media files
 **/*.jpg
 **/*.mpeg

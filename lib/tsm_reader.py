@@ -8,17 +8,21 @@ import numpy as np
 class TSM_Reader():
 
     def __init__(self):
-        super().__init__(Metadata())
-        
+
         self.width = None
         self.height = None
         self.num_pts = None
+        self.int_pts = None
         self.images = None
         self.fp_arr = None
         self.dark_frame = None
+        self.metadata = {}
         
     def get_dim(self):
         return [self.num_pts, self.width, self.height]
+
+    def get_int_pts(self):
+        return self.int_pts
 
     def load_tsm(self, filename):
         print(filename, "to be treated as TSM file to open")
@@ -30,29 +34,32 @@ class TSM_Reader():
         header = [x.strip() for x in header.split(" ") if x != "=" and len(x) > 0]
         for i in range(len(header)):
             if header[i] == "NAXIS1":
-                width = int(header[i+1])
+                self.width = int(header[i+1])
             if header[i] == "NAXIS2":
-                height = int(header[i+1])
+                self.height = int(header[i+1])
             if header[i] == "NAXIS3":
-                num_pts = int(header[i+1])
+                self.num_pts = int(header[i+1])
+            if header[i] == "EXPOSURE=":
+                self.int_pts = float(header[i+1]) * 1000 # ms
 
-        print("Reading file as", num_pts, "images of size", width, "x", height)
+        self.metadata['number_of_trials'] = 1
 
-        self.images = np.fromfile(file, dtype=np.int16, count=num_pts * width * height).reshape(num_pts, height, width)
-        self.dark_frame = np.fromfile(file, dtype=np.int16, count=width * height).reshape(height, width)
+        print("Reading file as", self.num_pts, "images of size", self.width, "x", self.height)
+
+        self.images = np.fromfile(file,
+                                dtype=np.int16,
+                                count=self.num_pts * self.width * self.height).reshape(self.num_pts, self.height, self.width)
+        self.images = self.images.reshape((1,)+self.images.shape)
+        self.dark_frame = np.fromfile(file,
+                                dtype=np.int16,
+                                count=self.width * self.height).reshape(self.height, self.width)
         file.close()
 
         tbn_filename = filename.split(".tsm")[0] + ".tbn"
-        self.load_tbn(tbn_filename, db, num_pts)
+        self.load_tbn(tbn_filename, self.num_pts)
 
     # read NI data from .tbn file
-    def load_tbn(self, filename, db, num_pts, trial=0):
-
-        if db.file_exists_in_own_path(filename):
-            print("Found file to load FP data from:", filename)
-        else:
-            print("Could not find a matching .tbn file:", filename)
-            return
+    def load_tbn(self, filename, num_pts, trial=0):
 
         file = open(filename, 'rb')
 
