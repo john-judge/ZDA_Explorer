@@ -134,6 +134,7 @@ class Dataset:
                     self.x_range[0]:self.x_range[1],
                     self.y_range[0]:self.y_range[1]]
 
+        print(self.meta, ret_data.shape)
         if self.binning > 1:
             ret_data = block_reduce(ret_data,
                             (1, 1, self.binning, self.binning),
@@ -226,9 +227,9 @@ class Dataset:
         rli['rli_max'] = [int.from_bytes(file.read(shSize), "little") for _ in range(num_diodes)]
 
         raw_data = np.zeros((metadata['number_of_trials'],
+                             metadata['points_per_trace'],
                              metadata['raw_width'],
-                             metadata['raw_height'],
-                             metadata['points_per_trace'])).astype(int)
+                             metadata['raw_height'])).astype(int)
 
         for i in range(metadata['number_of_trials']):
             for jw in range(metadata['raw_width']):

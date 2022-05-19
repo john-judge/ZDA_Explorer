@@ -93,7 +93,7 @@ class Tracer:
                     for jh in range(raw_data.shape[3]):
                         self.subtract_noise(raw_data, i, jw, jh,
                                               meta['interval_between_samples'],
-                                              plot=(i==0 and jw==40 and jh==100),
+                                              plot=(i==0 and jw==0 and jh==0),
                                               reg_type=3)
         else:
             for jw in range(raw_data.shape[1]):

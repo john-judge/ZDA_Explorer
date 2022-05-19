@@ -16,12 +16,15 @@ class AnalyzerSNR:
         self.clustered = None
         self.cluster_indices_by_snr = None
     
-    def get_snr(self, plot=False):
+    def get_snr(self, plot=False, window=None):
         """ Given a single trial, compute the SNR image for this trial """
-        self.snr = np.mean(self.data, axis=2) / np.std(self.data, axis=2)
-        
+        data = self.data
+        if window is not None:
+            data = self.data[window[0]:window[1], :, :]
+        self.snr = np.max(data, axis=0) / np.std(data, axis=0)
+        fig, ax = plt.subplots()
         if plot:
-            plt.imshow(self.snr, cmap='jet', interpolation='nearest')
+            ax.imshow(self.snr, cmap='jet', interpolation='nearest')
             plt.show()
             
         return self.snr
